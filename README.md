@@ -2,6 +2,10 @@
 
 A **local** page that lists the Cursor icon set from your existing Cursor installation.
 
+It shows every icon id Cursor accepts, drawn with Cursor's own icon font, in alphabetical order. Type in the search box to filter by id. Click an icon to copy its id, for example into the `icon:` field of a skill's frontmatter. The ids and the font are read from your Cursor install each time you start the server. Nothing from Cursor is copied into this folder.
+
+Some ids draw the same glyph, and Cursor accepts all of them. The Edit Icon pane in Cursor shows one id per glyph, so it lists fewer entries than this page.
+
 ## Run it
 
 ```bash
@@ -109,14 +113,6 @@ The file on disk is:
 
 Decode the catalog and compare. For `circles` in 3.24.9 the codepoint is U+EA97 (decimal 60055). If a later release drops that rule, pick any other `codicon-<id>` rule that sets `font-family: cursor-icons` and compare that id. A mismatch means the two strings were paired wrong.
 
-## What has to stay the same
+## After a Cursor update
 
-A longer or shorter id list is fine. These have to keep holding:
-
-- The module key is still the double-quoted string `"cursor-icons.js"`.
-- Ids use only letters, digits, and hyphens.
-- Ids stay prefix-compressed, one token per id, prefix length in the first character as a base-36 digit.
-- Outline codepoints stay a parallel string of base-36 deltas.
-- Those codepoints still select glyphs from the `cursor-icons` face in `cursor-icons-16.woff2`.
-
-`CURSOR_APP` covers a different install location. It does not cover a different layout under `resources/app`. A new packing scheme or a move to another file needs a new decoder.
+Restart the server. If it stops with an error, a Cursor update changed how the icons are stored. `AGENTS.md` lists what to check and what to change.
