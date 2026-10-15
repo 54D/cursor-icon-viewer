@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cursor icons</title>
+<style>
+  @font-face {
+    font-family: cursor-icons;
+    src: url("/font/cursor-icons.woff2") format("woff2");
+    font-display: block;
+  }
+
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f4ef;
+    --fg: #1d1c1a;
+    --muted: #77726a;
+    --line: #dedacf;
+    --hover: #ebe7dc;
+    --accent: #b4441c;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17161a;
+      --fg: #e8e5de;
+      --muted: #8d8a82;
+      --line: #2e2d33;
+      --hover: #222127;
+      --accent: #e9915f;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  code { font-family: var(--mono); font-size: 0.85em; }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 20px 24px 14px;
+  }
+  .title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 16px;
+    margin-bottom: 12px;
+  }
+  h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  #source, #count { color: var(--muted); font-size: 13px; }
+  #count { font-variant-numeric: tabular-nums; }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+  #q {
+    flex: 1 1 260px;
+    max-width: 420px;
+    padding: 8px 10px;
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  #q:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+
+  main { padding: 20px 24px 48px; }
+
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+  }
+  #grid li { display: contents; }
+
+  .icon {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-height: 104px;
+    padding: 18px 8px 12px;
+    font: inherit;
+    color: inherit;
+    text-align: center;
+    background: transparent;
+    border: 0;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .icon:hover { background: var(--hover); }
+  .icon:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .glyph {
+    height: 30px;
+    font: normal normal 30px/1 cursor-icons;
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0, "clig" 0;
+  }
+  .id {
+    font: 12px/1.3 var(--mono);
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .icon:hover .id, .icon:focus-visible .id { color: var(--fg); }
+
+  .done {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  #note { margin: 48px 0; color: var(--muted); text-align: center; }
+  #note.error { color: var(--accent); }
+  #note code { color: var(--fg); }
+
+  @media (max-width: 520px) {
+    header { padding: 14px 14px 10px; }
+    main { padding: 14px 14px 32px; }
+    #grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="title">
+    <h1>Cursor icons</h1>
+    <span id="source"></span>
+  </div>
+  <div class="controls">
+    <input id="q" type="search" placeholder="Filter by id" aria-label="Filter icons by id" autocomplete="off" spellcheck="false" autofocus>
+    <span id="count" aria-live="polite"></span>
+  </div>
+</header>
+<main>
+  <p id="note">Loading icon catalog…</p>
+  <ul id="grid" hidden></ul>
+</main>
+<template id="cell">
+  <li><button type="button" class="icon"><span class="glyph" aria-hidden="true"></span><span class="id"></span></button></li>
+</template>
+<script type="module">
+const q = document.getElementById("q");
+const grid = document.getElementById("grid");
+const note = document.getElementById("note");
+const count = document.getElementById("count");
+const source = document.getElementById("source");
+const cell = document.getElementById("cell").content.firstElementChild;
+
+function code(text) {
+  const element = document.createElement("code");
+  element.textContent = text;
+  return element;
+}
+
+function render({ id, cp }) {
+  const li = cell.cloneNode(true);
+  li.firstElementChild.dataset.id = id;
+  li.querySelector(".glyph").textContent = String.fromCodePoint(cp);
+  li.querySelector(".id").textContent = id;
+  return li;
+}
+
+function filter() {
+  const needle = q.value.toLowerCase();
+  let shown = 0;
+  for (const li of grid.children) {
+    li.hidden = !li.firstElementChild.dataset.id.toLowerCase().includes(needle);
+    if (!li.hidden) shown++;
+  }
+  const total = grid.children.length;
+  count.textContent = needle ? `${shown} of ${total} icons` : `${total} icons`;
+  grid.hidden = shown === 0;
+  note.hidden = shown !== 0;
+  if (shown === 0) note.replaceChildren("No icon id contains ", code(q.value), ".");
+}
+
+function flash(button, message) {
+  button.querySelector(".done")?.remove();
+  const tag = document.createElement("span");
+  tag.className = "done";
+  tag.textContent = message;
+  button.append(tag);
+  setTimeout(() => tag.remove(), 900);
+}
+
+grid.addEventListener("click", async (event) => {
+  const button = event.target.closest(".icon");
+  if (!button) return;
+  try {
+    await navigator.clipboard.writeText(button.dataset.id);
+    flash(button, "Copied");
+  } catch {
+    flash(button, "Copy failed");
+  }
+});
+
+try {
+  const res = await fetch("/api/icons", { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const { version, commit, bundle, icons } = await res.json();
+  const sha = code((commit ?? "").slice(0, 7));
+  sha.title = `${commit} (${bundle})`;
+  source.replaceChildren(`Cursor ${version} at `, sha);
+  grid.replaceChildren(...icons.map(render));
+  filter();
+  q.addEventListener("input", filter);
+} catch (err) {
+  note.classList.add("error");
+  note.textContent = `Could not load /api/icons: ${err.message}. The server has probably stopped. Restart serve.py.`;
+}
+</script>
+</body>
+</html>
